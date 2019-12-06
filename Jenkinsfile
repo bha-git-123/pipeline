@@ -1,219 +1,26 @@
-#!/usr/bin/groovy
+blocks = [
+	[
+		"type": "section",
+		"text": [
+			"type": "mrkdwn",
+			"text": "Hello, Assistant to the Regional Manager Dwight! *Michael Scott* wants to know where you'd like to take the Paper Company investors to dinner tonight.\n\n *Please select a restaurant:*"
+		]
+	],
+    [
+		"type": "divider"
+	],
+	[
+		"type": "section",
+		"text": [
+			"type": "mrkdwn",
+			"text": "*Farmhouse Thai Cuisine*\n:star::star::star::star: 1528 reviews\n They do have some vegan options, like the roti and curry, plus they have a ton of salad stuff and noodles can be ordered without meat!! They have something for everyone here"
+		],
+		"accessory": [
+			"type": "image",
+			"image_url": "https://s3-media3.fl.yelpcdn.com/bphoto/c7ed05m9lC2EmA3Aruue7A/o.jpg",
+			"alt_text": "alt text for image"
+		]
+	]
+]
 
-pipeline {
-    agent any#!/usr/bin/groovy
-
-pipeline {
-    agent any
-
-    options {
-        disableConcurrentBuilds()
-    }
-
-	environment {
-		PYTHONPATH = "${WORKSPACE}/section_4/code/cd_pipeline"
-	}
-
-    stages {
-
-		stage("Test - Unit tests") {
-			steps { runUnittests() }
-		}
-
-        stage("Build") {
-            steps { buildApp() }
-		}
-
-        stage("Deploy - Dev") {
-            steps { deploy('dev') }
-		}
-
-		stage("Test - UAT Dev") {
-            steps { runUAT(8888) }
-		}
-
-        stage("Deploy - Stage") {
-            steps { deploy('stage') }
-		}
-
-		stage("Test - UAT Stage") {
-            steps { runUAT(88) }
-		}
-
-        stage("Approve") {
-            steps { approve() }
-		}
-
-        stage("Deploy - Live") {
-            steps { deploy('live') }
-		}
-
-		stage("Test - UAT Live") {
-            steps { runUAT(80) }
-		}
-
-	}
-}
-
-
-// steps
-def buildApp() {
-	dir ('section_4/code/cd_pipeline' ) {
-		def appImage = docker.build("hands-on-jenkins/myapp:${BUILD_NUMBER}")
-	}
-}
-
-
-def deploy(environment) {
-
-	def containerName = ''
-	def port = ''
-
-	if ("${environment}" == 'dev') {
-		containerName = "app_dev"
-		port = "8888"
-	} 
-	else if ("${environment}" == 'stage') {
-		containerName = "app_stage"
-		port = "88"
-	}
-	else if ("${environment}" == 'live') {
-		containerName = "app_live"
-		port = "80"
-	}
-	else {
-		println "Environment not valid"
-		System.exit(0)
-	}
-
-	sh "docker ps -f name=${containerName} -q | xargs --no-run-if-empty docker stop"
-	sh "docker ps -a -f name=${containerName} -q | xargs -r docker rm"
-	sh "docker run -d -p ${port}:5000 --name ${containerName} hands-on-jenkins/myapp:${BUILD_NUMBER}"
-
-}
-
-
-def approve() {
-
-	timeout(time:1, unit:'DAYS') {
-		input('Do you want to deploy to live?')
-	}
-
-}
-
-
-def runUnittests() {
-	sh "pip3 install --no-cache-dir -r ./section_4/code/cd_pipeline/requirements.txt"
-	sh "python3 section_4/code/cd_pipeline/tests/test_flask_app.py"
-}
-
-
-def runUAT(port) {
-	sh "section_4/code/cd_pipeline/tests/runUAT.sh ${port}"
-}
-
-    options {
-        disableConcurrentBuilds()
-    }
-
-	environment {
-		PYTHONPATH = "${WORKSPACE}/section_4/code/cd_pipeline"
-	}
-
-    stages {
-
-		stage("Test - Unit tests") {
-			steps { runUnittests() }
-		}
-
-        stage("Build") {
-            steps { buildApp() }
-		}
-
-        stage("Deploy - Dev") {
-            steps { deploy('dev') }
-		}
-
-		stage("Test - UAT Dev") {
-            steps { runUAT(8888) }
-		}
-
-        stage("Deploy - Stage") {
-            steps { deploy('stage') }
-		}
-
-		stage("Test - UAT Stage") {
-            steps { runUAT(88) }
-		}
-
-        stage("Approve") {
-            steps { approve() }
-		}
-
-        stage("Deploy - Live") {
-            steps { deploy('live') }
-		}
-
-		stage("Test - UAT Live") {
-            steps { runUAT(80) }
-		}
-
-	}
-}
-
-
-// steps
-def buildApp() {
-	dir ('section_4/code/cd_pipeline' ) {
-		def appImage = docker.build("hands-on-jenkins/myapp:${BUILD_NUMBER}")
-	}
-}
-
-
-def deploy(environment) {
-
-	def containerName = ''
-	def port = ''
-
-	if ("${environment}" == 'dev') {
-		containerName = "app_dev"
-		port = "8888"
-	} 
-	else if ("${environment}" == 'stage') {
-		containerName = "app_stage"
-		port = "88"
-	}
-	else if ("${environment}" == 'live') {
-		containerName = "app_live"
-		port = "80"
-	}
-	else {
-		println "Environment not valid"
-		System.exit(0)
-	}
-
-	sh "docker ps -f name=${containerName} -q | xargs --no-run-if-empty docker stop"
-	sh "docker ps -a -f name=${containerName} -q | xargs -r docker rm"
-	sh "docker run -d -p ${port}:5000 --name ${containerName} hands-on-jenkins/myapp:${BUILD_NUMBER}"
-
-}
-
-
-def approve() {
-
-	timeout(time:1, unit:'DAYS') {
-		input('Do you want to deploy to live?')
-	}
-
-}
-
-
-def runUnittests() {
-	sh "pip3 install --no-cache-dir -r ./section_4/code/cd_pipeline/requirements.txt"
-	sh "python3 section_4/code/cd_pipeline/tests/test_flask_app.py"
-}
-
-
-def runUAT(port) {
-	sh "section_4/code/cd_pipeline/tests/runUAT.sh ${port}"
-}
+slackSend(channel: ' #mcms-iscp-developer', blocks: blocks)
